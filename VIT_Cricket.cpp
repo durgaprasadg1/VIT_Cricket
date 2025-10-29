@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <climits>
+#include <fstream>
+#include <string>
+#include <cstring>
 using namespace std;
 
 class Toss
@@ -241,85 +244,137 @@ private:
         return (runs / overs) + 0.3f;
     }
 
+    // ⭐ ADDED: Save result to file
+    void saveMatchResult(int score1, int score2)
+    {
+        ofstream file("match_history.txt", ios::app);
+        time_t now = time(0);
+        char *dt = ctime(&now);
+        dt[strlen(dt) - 1] = '\0'; // remove newline
+        file << "[" << dt << "]  Player1: " << score1 << " | Player2: " << score2;
+        if (score1 > score2)
+            file << "  -> Player 1 Won";
+        else if (score2 > score1)
+            file << "  -> Player 2 Won";
+        else
+            file << "  -> Tie (Super Over)";
+        file << "\n";
+        file.close();
+    }
+
+    void viewHistory()
+    {
+        ifstream file("match_history.txt");
+        if (!file)
+        {
+            cout << "\nNo match history found!\n";
+            return;
+        }
+        cout << "\n====== MATCH HISTORY ======\n";
+        string line;
+        while (getline(file, line))
+        {
+            cout << line << "\n";
+        }
+        cout << "===========================\n\n";
+        file.close();
+    }
+
 public:
     void start()
     {
         srand(static_cast<unsigned>(time(0)));
         displayRules();
 
-        int wickets, overs;
-        cout << "Enter number of wickets: ";
-        cin >> wickets;
-        if (wickets <= 0)
+        while (true)
         {
-            cout << "Invalid input! Exiting.\n";
-            return;
-        }
+            int menuChoice;
+            cout << "1. Start New Match\n2. View Match History\n3. Exit\nChoice: ";
+            cin >> menuChoice;
 
-        cout << "Enter number of overs: ";
-        cin >> overs;
-        if (overs <= 0)
-        {
-            cout << "Invalid input! Exiting.\n";
-            return;
-        }
+            if (menuChoice == 3)
+            {
+                cout << "Exiting game.\n";
+                break;
+            }
+            else if (menuChoice == 2)
+            {
+                viewHistory();
+                continue;
+            }
 
-        int choice;
-        cout << "1. Toss\n2. Exit\nChoice: ";
-        cin >> choice;
+            int wickets, overs;
+            cout << "Enter number of wickets: ";
+            cin >> wickets;
+            if (wickets <= 0)
+            {
+                cout << "Invalid input! Exiting.\n";
+                return;
+            }
 
-        if (choice == 2)
-        {
-            cout << "Exiting game.\n";
-            return;
-        }
+            cout << "Enter number of overs: ";
+            cin >> overs;
+            if (overs <= 0)
+            {
+                cout << "Invalid input! Exiting.\n";
+                return;
+            }
 
-        char tossChoice;
-        cout << "Heads (H) or Tails (T)? ";
-        cin >> tossChoice;
+            int choice;
+            cout << "1. Toss\n2. Exit\nChoice: ";
+            cin >> choice;
 
-        Toss tossObj;
-        if (tossChoice == 'H' || tossChoice == 'h')
-        {
-            tossObj.execute(0);
-        }
-        else if (tossChoice == 'T' || tossChoice == 't')
-        {
-            tossObj.execute(1);
-        }
-        else
-        {
-            cout << "Invalid choice! Exiting.\n";
-            return;
-        }
+            if (choice == 2)
+            {
+                cout << "Exiting game.\n";
+                return;
+            }
 
-        Innings firstInnings(wickets, overs);
-        cout << "\n===== FIRST INNINGS START =====\n";
-        int score1 = firstInnings.play();
-        cout << "\nFirst innings total: " << score1 << "\n";
+            char tossChoice;
+            cout << "Heads (H) or Tails (T)? ";
+            cin >> tossChoice;
 
-        int target = score1 + 1;
-        cout << "\n===== SECOND INNINGS START =====\n";
-        cout << "TARGET: " << target << "\n";
-        cout << "Required run rate: " << calculateRunRate(score1, overs) << "\n";
+            Toss tossObj;
+            if (tossChoice == 'H' || tossChoice == 'h')
+                tossObj.execute(0);
+            else if (tossChoice == 'T' || tossChoice == 't')
+                tossObj.execute(1);
+            else
+            {
+                cout << "Invalid choice! Exiting.\n";
+                return;
+            }
 
-        Innings secondInnings(wickets, overs, target);
-        int score2 = secondInnings.play();
-        cout << "\nSecond innings total: " << score2 << "\n";
+            Innings firstInnings(wickets, overs);
+            cout << "\n===== FIRST INNINGS START =====\n";
+            int score1 = firstInnings.play();
+            cout << "\nFirst innings total: " << score1 << "\n";
 
-        if (score1 == score2)
-        {
-            cout << "\n===== SUPER OVER INITIATED =====\n";
-            SuperOver super;
-            super.play();
-        }
-        else if (score1 > score2)
-        {
-            cout << "\nPlayer 1 wins runs!\n";
-        }
-        else
-        {
-            cout << "\nPlayer 2 wins ";
+            int target = score1 + 1;
+            cout << "\n===== SECOND INNINGS START =====\n";
+            cout << "TARGET: " << target << "\n";
+            cout << "Required run rate: " << calculateRunRate(score1, overs) << "\n";
+
+            Innings secondInnings(wickets, overs, target);
+            int score2 = secondInnings.play();
+            cout << "\nSecond innings total: " << score2 << "\n";
+
+            saveMatchResult(score1, score2); 
+
+            if (score1 == score2)
+            {
+                cout << "\n===== SUPER OVER INITIATED =====\n";
+                SuperOver super;
+                super.play();
+            }
+            else if (score1 > score2)
+            {
+                cout << "\nPlayer 1 wins!\n";
+            }
+            else
+            {
+                cout << "\nPlayer 2 wins!\n";
+            }
         }
     }
 };
